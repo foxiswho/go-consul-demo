@@ -50,5 +50,54 @@ consul agent -data-dir /tmp/consul -node=worker002 -bind=10.2.1.94  -join 10.2.1
 >说明：service 程序是`service.go`代码编译后的测试程序
 
 # DOCKER 方式
+## 拉取 consul 镜像
+https://hub.docker.com/_/consul/
+```SHELL
+docker pull consul
+```
+
+## docker 创建自定义网络
+
+docker network create --subnet=10.2.0.0/16 myConsul
+
+## DOCKER consul server
+格式
+```SHELL
+docker run -d --net=host -e 'CONSUL_LOCAL_CONFIG={"skip_leave_on_interrupt": true}' consul agent -server -bind=<external ip> -retry-join=<root agent ip> -bootstrap-expect=<number of server agents>
+```
+
+
+创建容器
+
+```SHELL
+docker run -d --net myConsul --ip 10.2.1.54 -e 'CONSUL_LOCAL_CONFIG={"skip_leave_on_interrupt": true}' consul agent -server -bind=10.2.1.54 -node=server001 -bootstrap-expect=3
+
+docker run -d --net myConsul --ip 10.2.1.83 -e 'CONSUL_LOCAL_CONFIG={"skip_leave_on_interrupt": true}' consul agent -server -bind=10.2.1.83 -node=server002
+
+docker run -d --net myConsul --ip 10.2.1.80 -e 'CONSUL_LOCAL_CONFIG={"skip_leave_on_interrupt": true}' consul agent -server -bind=10.2.1.80 -node=server003
+
+```
+
+## DOCKER consul client
+
+格式
+```SHELL
+docker run -d --net=host -e 'CONSUL_LOCAL_CONFIG={"leave_on_terminate": true}' consul agent -bind=<external ip> -retry-join=<root agent ip>
+```
+
+### DOCKER consul  manger
+
+```SHELL
+docker run -d --net myConsul --ip 10.2.1.92 -e 'CONSUL_LOCAL_CONFIG={"leave_on_terminate": true}' consul agent -node=mangaer -bind=10.2.1.92 -join 10.2.1.54 ./service -consul_addr=127.0.0.1:8500 -monitor_addr=127.0.0.1:54321 -service_name=manager -ip=10.2.1.92 -port=4300 -found_service=worker
+
+```
+
+### DOCKER consul  client
+
+```shell
+docker run -d --net myConsul --ip 10.2.1.93 -e 'CONSUL_LOCAL_CONFIG={"leave_on_terminate": true}' consul agent -node=worker001 -bind=10.2.1.93 -join 10.2.1.54 ./service -consul_addr=127.0.0.1:8500 -monitor_addr=127.0.0.1:54321 -service_name=worker -ip=10.2.1.93 -port=4300 -found_service=manager
+
+docker run -d --net myConsul --ip 10.2.1.94 -e 'CONSUL_LOCAL_CONFIG={"leave_on_terminate": true}' consul agent -node=worker002 -bind=10.2.1.94 -join 10.2.1.54 ./service -consul_addr=127.0.0.1:8500 -monitor_addr=127.0.0.1:54321 -service_name=worker -ip=10.2.1.94 -port=4300 -found_service=manager
+```
 
 未完待续
