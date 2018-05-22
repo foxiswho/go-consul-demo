@@ -9,6 +9,12 @@ consul agent -dev
 
 如果没有 consul  ，请先安装 consul
 
+
+浏览器查看状态
+```SHELL
+http://127.0.0.1:8500/ui/
+```
+
 # 执行 server
 进入`demo1`目录后执行
 ```SHELL
